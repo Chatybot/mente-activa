@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tags para que parezca una App nativa -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FFFDD0">
+    
+    <title>Entrenamiento Mental Senior</title>
+    <style>
+        :root {
+            --bg-color: #FFFDD0; /* Blanco crema */
+            --text-color: #1A1A1A; /* Negro azulado */
+            --accent-color: #004080; /* Azul profundo */
+            --success-color: #2D5A27; /* Verde suave */
+            --error-color: #8B0000; /* Rojo oscuro */
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        h1 { font-size: 32px; text-align: center; margin: 15px 0; }
+        p { font-size: 24px; line-height: 1.4; padding: 0 10px; }
+
+        .btn-large {
+            min-height: 85px;
+            width: 90%;
+            max-width: 500px;
+            margin: 10px auto;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px #00264d;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn-large:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px #00264d;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .active { display: flex; }
+
+        #game-area {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .voice-btn {
+            background-color: #F39C12;
+            color: white;
+            font-size: 22px;
+            margin-bottom: 25px;
+            padding: 15px 25px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border: none;
+            box-shadow: 0 4px #d35400;
+            width: 80%;
+        }
+
+        .grid-memory {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .card {
+            height: 130px;
+            background-color: var(--accent-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: transparent;
+            transition: 0.3s;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .card.flipped {
+            background-color: white;
+            color: black;
+            border: 4px solid var(--accent-color);
+        }
+
+        #feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .back-home {
+            position: absolute;
+            top: env(safe-area-inset-top, 20px);
+            left: 20px;
+            font-size: 22px;
+            background: white;
+            border: 2px solid var(--accent-color);
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        /* Estilo para los emoticonos grandes */
+        .emoji-feedback { font-size: 100px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla Principal -->
+    <div id="home-screen" class="screen active">
+        <div style="font-size: 80px;">👵👴</div>
+        <h1>Gimnasio Mental</h1>
+        <p>¡Hola! Elige un juego para hoy:</p>
+        <button class="btn-large" onclick="startGame('memory')">🧠 Parejas</button>
+        <button class="btn-large" onclick="startGame('agility')">🔢 ¿Cuál es mayor?</button>
+        <button class="btn-large" onclick="startGame('association')">🧩 Relacionar</button>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="game-screen" class="screen">
+        <button class="back-home" onclick="showHomeScreen()">Atrás</button>
+        <h2 id="game-title" style="font-size: 30px; margin-top: 60px;">Título</h2>
+        
+        <button class="voice-btn" onclick="readInstructions()">
+            🔊 Escuchar guía
+        </button>
+
+        <div id="game-area"></div>
+    </div>
+
+    <!-- Feedback -->
+    <div id="feedback-overlay">
+        <div id="feedback-content"></div>
+        <button class="btn-large" id="feedback-btn" style="margin-top: 40px;">Siguiente</button>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const gameTitle = document.getElementById('game-title');
+        const overlay = document.getElementById('feedback-overlay');
+        const feedbackContent = document.getElementById('feedback-content');
+        const feedbackBtn = document.getElementById('feedback-btn');
+
+        let currentGame = '';
+        let instructions = '';
+
+        function readInstructions() {
+            const utterance = new SpeechSynthesisUtterance(instructions);
+            utterance.lang = 'es-ES';
+            utterance.rate = 0.75; // Velocidad pausada
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showHomeScreen() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('home-screen').classList.add('active');
+            window.speechSynthesis.cancel();
+        }
+
+        function startGame(type) {
+            currentGame = type;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
+            gameArea.innerHTML = '';
+            
+            if (type === 'memory') setupMemoryGame();
+            else if (type === 'agility') setupAgilityGame();
+            else if (type === 'association') setupAssociationGame();
+            
+            // Auto-leer instrucciones al entrar por primera vez si se desea
+        }
+
+        function setupMemoryGame() {
+            gameTitle.innerText = "Parejas de Frutas";
+            instructions = "Toca los cuadros para ver las frutas. Encuentra las dos que son iguales.";
+            
+            const icons = ['🍎', '🍐', '🍊', '🍋'];
+            let cardsData = [...icons, ...icons].sort(() => Math.random() - 0.5);
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid-memory';
+            
+            let flippedCards = [];
+            let matches = 0;
+
+            cardsData.forEach((icon) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.icon = icon;
+                card.innerText = icon;
+                card.onclick = () => {
+                    if (card.classList.contains('flipped') || flippedCards.length === 2) return;
+                    card.classList.add('flipped');
+                    flippedCards.push(card);
+
+                    if (flippedCards.length === 2) {
+                        if (flippedCards[0].dataset.icon === flippedCards[1].dataset.icon) {
+                            matches++;
+                            flippedCards = [];
+                            if (matches === icons.length) {
+                                setTimeout(() => showFeedback(true, "¡Qué buena memoria tienes!"), 500);
+                            }
+                        } else {
+                            setTimeout(() => {
+                                flippedCards[0].classList.remove('flipped');
+                                flippedCards[1].classList.remove('flipped');
+                                flippedCards = [];
+                            }, 1200);
+                        }
+                    }
+                };
+                grid.appendChild(card);
+            });
+            gameArea.appendChild(grid);
+        }
+
+        function setupAgilityGame() {
+            gameTitle.innerText = "El Número Mayor";
+            instructions = "Mira los dos números. Toca el que sea más grande.";
+            
+            const n1 = Math.floor(Math.random() * 40) + 1;
+            let n2 = Math.floor(Math.random() * 40) + 1;
+            while(n1 === n2) n2 = Math.floor(Math.random() * 40) + 1;
+
+            [n1, n2].forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-large';
+                btn.style.height = '140px';
+                btn.style.fontSize = '65px';
+                btn.innerText = num;
+                btn.onclick = () => {
+                    if (num === Math.max(n1, n2)) {
+                        showFeedback(true, "¡Correcto! Ese es el mayor.");
+                    } else {
+                        showFeedback(false, "Ese es el más pequeño. ¡Inténtalo otra vez!");
+                    }
+                };
+                gameArea.appendChild(btn);
+            });
+        }
+
+        function setupAssociationGame() {
+            gameTitle.innerText = "Asociación";
+            const challenges = [
+                { q: "¿Qué usamos para abrir la PUERTA?", opts: ["🔑 Llaves", "🕶️ Gafas", "🔦 Linterna"], win: 0 },
+                { q: "¿Dónde guardamos la COMIDA fría?", opts: ["📦 Horno", "❄️ Nevera", "🧺 Cesta"], win: 1 },
+                { q: "¿Qué animal nos da LECHE?", opts: ["🐕 Perro", "🐄 Vaca", "🐎 Caballo"], win: 1 }
+            ];
+            const ch = challenges[Math.floor(Math.random() * challenges.length)];
+            instructions = ch.q;
+
+            const qText = document.createElement('p');
+            qText.style.fontWeight = 'bold';
+            qText.style.fontSize = '28px';
+            qText.innerText = ch.q;
+            gameArea.appendChild(qText);
+
+            ch.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-large';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (idx === ch.win) showFeedback(true, "¡Perfecto! Sabes mucho.");
+                    else showFeedback(false, "Casi, pero esa no es. Inténtalo de nuevo.");
+                };
+                gameArea.appendChild(btn);
+            });
+        }
+
+        function showFeedback(success, msg) {
+            window.speechSynthesis.cancel();
+            feedbackContent.innerHTML = success ? 
+                `<div class="emoji-feedback">🌟</div><h1>¡Muy bien!</h1><p>${msg}</p>` :
+                `<div class="emoji-feedback">💪</div><h1>¡Vamos!</h1><p>${msg}</p>`;
+            
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.lang = 'es-ES';
+            window.speechSynthesis.speak(utterance);
+
+            overlay.style.display = 'flex';
+            feedbackBtn.innerText = success ? "Volver al inicio" : "Volver a intentar";
+            feedbackBtn.onclick = () => {
+                overlay.style.display = 'none';
+                if (success) showHomeScreen();
+                else startGame(currentGame);
+            };
+        }
+    </script>
+</body>
+</html>
